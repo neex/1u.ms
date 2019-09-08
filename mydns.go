@@ -38,6 +38,7 @@ func main() {
 	handlers := DNSHandlers{
 		NewRebindRecordHandler(),
 		NewMakeRecordHandler(),
+		NewIncRecordHandler(),
 		NewPredifinedRecordHandler(),
 	}
 

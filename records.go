@@ -52,6 +52,10 @@ var records = map[query][]string{
 	{t: dns.TypeA, name: "1u.ms."}: {
 		"1u.ms. 0 IN CNAME this.sub.sh.je.",
 	},
+
+	{t: dns.TypeA, name: "rec.sub.sh.je."}: {
+		"rec.sub.sh.je. 0 IN CNAME rec.sub.sh.je.",
+	},
 }
 
 func init() {

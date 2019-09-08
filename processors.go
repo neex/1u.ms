@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 const (
 	rebindRecord   = `.*rebind-(.*?)rr.*`
 	makeRecord     = `.*make-(.*?)rr.*`
+	incRecord      = `(.*inc-)([0-9]+?)(-num.*)`
 	cnameSubdomain = ".sub.sh.je."
 )
 
@@ -30,6 +32,20 @@ func NewRebindRecordHandler() DNSHandler {
 			return nil
 		}
 		return convertAddr(match[1], q)
+	})
+}
+
+func NewIncRecordHandler() DNSHandler {
+	return NewDNSRegexpHandler(incRecord, func(q *query, match []string) []string {
+		if q.t != dns.TypeA {
+			return nil
+		}
+		val, err := strconv.Atoi(match[2])
+		if err != nil {
+			return nil
+		}
+		newName := fmt.Sprintf("%s%d%s", match[1], val+1, match[3])
+		return []string{makeRR(q.name, "CNAME", newName)}
 	})
 }
 
