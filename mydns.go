@@ -20,7 +20,7 @@ func (h *HandlerWrapper) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 
 	q := &query{msg.Question[0].Qtype, strings.ToLower(msg.Question[0].Name)}
 
-	replies := h.DNSHandler.Handle(q)
+	replies, _ := h.DNSHandler.Handle(q)
 	if q.name != "hui.sub.sh.je." {
 		_, _ = fmt.Fprintf(os.Stderr, "dns %v: %v %v -> %#v\n", w.RemoteAddr(), dns.TypeToString[q.t], q.name, replies)
 	}

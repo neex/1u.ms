@@ -12,50 +12,61 @@ import (
 )
 
 const (
-	rebindRecord   = `.*rebind-(.*?)rr.*`
-	makeRecord     = `.*make-(.*?)rr.*`
-	incRecord      = `(.*inc-)([0-9]+?)(-num.*)`
-	cnameSubdomain = ".sub.sh.je."
+	rebindRecord    = `.*rebind-(.*?)rr.*`
+	makeRecord      = `.*make-(.*?)rr.*`
+	incRecord       = `(.*inc-)([0-9]+?)(-num.*)`
+	cnameSubdomain  = ".sub.sh.je."
+	multipleRecords = "-and-"
 )
 
 func NewMakeRecordHandler() DNSHandler {
-	return NewDNSRegexpHandler(makeRecord, func(q *query, match []string) []string {
-		return convertAddr(match[1], q)
+	return NewDNSRegexpHandler(makeRecord, func(q *query, match []string) ([]string, bool) {
+		return convertAddrs(match[1], q)
 	})
 }
 
 func NewRebindRecordHandler() DNSHandler {
 	qtimes := make(map[query]time.Time)
-	return NewDNSRegexpHandler(rebindRecord, func(q *query, match []string) []string {
+	return NewDNSRegexpHandler(rebindRecord, func(q *query, match []string) ([]string, bool) {
 		if time.Since(qtimes[*q]) > 5*time.Second {
 			qtimes[*q] = time.Now()
-			return nil
+			return nil, false
 		}
-		return convertAddr(match[1], q)
+		return convertAddrs(match[1], q)
 	})
 }
 
 func NewIncRecordHandler() DNSHandler {
-	return NewDNSRegexpHandler(incRecord, func(q *query, match []string) []string {
+	return NewDNSRegexpHandler(incRecord, func(q *query, match []string) ([]string, bool) {
 		if q.t != dns.TypeA {
-			return nil
+			return nil, false
 		}
 		val, err := strconv.Atoi(match[2])
 		if err != nil {
-			return nil
+			return nil, false
 		}
 		newName := fmt.Sprintf("%s%d%s", match[1], val+1, match[3])
-		return []string{makeRR(q.name, "CNAME", newName)}
+		return []string{makeRR(q.name, "CNAME", newName)}, true
 	})
 }
 
-func convertAddr(addr string, q *query) []string {
+func convertAddrs(addr string, q *query) (rrs []string, final bool) {
+	addrs := strings.Split(addr, multipleRecords)
+	for _, addr := range addrs {
+		vals, parsed := convertAddr(addr, q)
+		final = final || parsed
+		rrs = append(rrs, vals...)
+	}
+	return
+}
+
+func convertAddr(addr string, q *query) ([]string, bool) {
 	if len(addr) > 0 && addr[len(addr)-1] == '-' {
 		addr = addr[:len(addr)-1]
 	}
 
 	if strings.HasPrefix(addr, "cname-") {
-		return []string{makeRR(q.name, "CNAME", makeCNAME(strings.ToLower(addr[6:])))}
+		return []string{makeRR(q.name, "CNAME", makeCNAME(strings.ToLower(addr[6:])))}, true
 	}
 
 	if q.t == dns.TypeA || q.t == dns.TypeAAAA {
@@ -78,16 +89,16 @@ func convertAddr(addr string, q *query) []string {
 			isV4 := (parsed.To4() != nil) && !forceV6
 			if q.t == dns.TypeA {
 				if !isV4 {
-					return nil
+					return nil, true
 				}
-				return []string{makeRR(q.name, "A", parsed.To4().String())}
+				return []string{makeRR(q.name, "A", parsed.To4().String())}, true
 			}
 
 			if q.t == dns.TypeAAAA {
 				if isV4 {
-					return nil
+					return nil, true
 				}
-				return []string{makeRR(q.name, "AAAA", forcedV6(parsed))}
+				return []string{makeRR(q.name, "AAAA", forcedV6(parsed))}, true
 			}
 		}
 	}
@@ -101,14 +112,14 @@ func convertAddr(addr string, q *query) []string {
 
 	rr := makeRR(q.name, dns.TypeToString[q.t], addr)
 	if _, err := dns.NewRR(rr); err == nil {
-		return []string{rr}
+		return []string{rr}, true
 	}
 
-	return []string{makeRR(q.name, "CNAME", makeCNAME(addr))}
+	return []string{makeRR(q.name, "CNAME", makeCNAME(addr))}, true
 }
 
 func makeCNAME(cname string) string {
-	if len(cname) == 0 || cname[len(cname)-1] != '.' {
+	if !strings.Contains(cname, ".") {
 		cname = cname + cnameSubdomain
 	}
 	if cname[0] == '.' {

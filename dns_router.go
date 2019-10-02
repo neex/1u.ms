@@ -5,34 +5,34 @@ import (
 )
 
 type DNSHandler interface {
-	Handle(q *query) []string
+	Handle(q *query) (rrs []string, final bool)
 }
 
-type DNSHandlerFunc func(q *query) []string
+type DNSHandlerFunc func(q *query) ([]string, bool)
 
-func (f DNSHandlerFunc) Handle(q *query) []string {
+func (f DNSHandlerFunc) Handle(q *query) ([]string, bool) {
 	return f(q)
 }
 
 type DNSHandlers []DNSHandler
 
-func (t DNSHandlers) Handle(q *query) []string {
+func (t DNSHandlers) Handle(q *query) ([]string, bool) {
 	for i := range t {
-		if ans := t[i].Handle(q); ans != nil {
-			return ans
+		if ans, final := t[i].Handle(q); final {
+			return ans, final
 		}
 	}
-	return nil
+	return nil, false
 }
 
-type ParsedRegexpHandler func(q *query, match []string) []string
+type ParsedRegexpHandler func(q *query, match []string) ([]string, bool)
 
 func NewDNSRegexpHandler(expr string, handler ParsedRegexpHandler) DNSHandler {
 	r := regexp.MustCompile(expr)
-	return DNSHandlerFunc(func(q *query) []string {
+	return DNSHandlerFunc(func(q *query) ([]string, bool) {
 		if m := r.FindStringSubmatch(q.name); m != nil {
 			return handler(q, m)
 		}
-		return nil
+		return nil, false
 	})
 }
