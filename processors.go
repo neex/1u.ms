@@ -76,6 +76,14 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 			ip = ip[3:]
 			ip = strings.Replace(ip, "o", ".", -1)
 			ip = strings.Replace(ip, "c", ":", -1)
+		} else {
+			ipDashDots := strings.Replace(ip, "-", ".", -1)
+			ipDashColons := strings.Replace(ip, "-", ":", -1)
+			if net.ParseIP(ipDashDots) != nil {
+				ip = ipDashDots
+			} else if net.ParseIP(ipDashColons) != nil {
+				ip = ipDashColons
+			}
 		}
 
 		forceV6 := false
