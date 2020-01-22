@@ -109,6 +109,10 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 				return []string{makeRR(q.name, "AAAA", forcedV6(parsed))}, true
 			}
 		}
+	} else {
+		if strings.HasPrefix(strings.ToLower(addr), "ip-") {
+			return []string{}, true
+		}
 	}
 
 	if strings.HasPrefix(addr, "hex-") {
