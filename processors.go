@@ -13,7 +13,7 @@ import (
 
 const (
 	rebindRecord    = `.*rebind-(.*?)rr.*`
-	makeRecord      = `.*make-(.*?)rr.*`
+	makeRecord      = `.*make-(.*?)(rr|rebind).*`
 	incRecord       = `(.*inc-)([0-9]+?)(-num.*)`
 	cnameSubdomain  = ".sub.sh.je."
 	multipleRecords = "-and-"
