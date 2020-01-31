@@ -66,7 +66,7 @@ func init() {
 	}
 }
 
-func NewPredifinedRecordHandler() DNSHandler {
+func NewPredefinedRecordHandler() DNSHandler {
 	return DNSHandlerFunc(func(q *query) (rrs []string, had bool) {
 		rrs, had = records[*q]
 		return

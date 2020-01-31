@@ -115,16 +115,22 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 		}
 	}
 
+	allowCNAME := true
 	if strings.HasPrefix(addr, "hex-") {
 		cc, err := hex.DecodeString(addr[4:])
 		if err == nil {
 			addr = string(cc)
+			allowCNAME = false
 		}
 	}
 
 	rr := makeRR(q.name, dns.TypeToString[q.t], addr)
 	if _, err := dns.NewRR(rr); err == nil {
 		return []string{rr}, true
+	}
+
+	if !allowCNAME {
+		return []string{}, true
 	}
 
 	return []string{makeRR(q.name, "CNAME", makeCNAME(addr))}, true

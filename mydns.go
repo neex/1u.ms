@@ -1,5 +1,8 @@
 package main
 
+//go:generate ./make_docs.sh
+//go:generate go run readme_gen.go
+
 import (
 	"fmt"
 	"log"
@@ -54,7 +57,7 @@ func main() {
 		NewRebindRecordHandler(),
 		NewMakeRecordHandler(),
 		NewIncRecordHandler(),
-		NewPredifinedRecordHandler(),
+		NewPredefinedRecordHandler(),
 	}
 
 	if len(os.Args) == 2 && os.Args[1] == "--no-rebind" {
@@ -64,8 +67,17 @@ func main() {
 	lv := NewLogViewer()
 	mux := http.NewServeMux()
 	lv.RegisterHandlers(mux)
+	mux.Handle("/", http.FileServer(Readme))
+
 	go func() {
 		err := http.ListenAndServe(":8080", mux)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	go func() {
+		err := http.ListenAndServe(":80", mux)
 		if err != nil {
 			log.Fatal(err)
 		}
