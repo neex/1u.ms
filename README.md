@@ -68,6 +68,18 @@ The logic behind the feature is as follows:
 
 You can use prefixes before `make-` and suffix after `-rr` in order to uniqualize the domain name (e.g. `prefix-make-1.2.3.4-rebind-169.254-169.254-rr-suffix.1u.ms`). The timeouts are separate for each domain name.
 
+If you need to change the default 5 seconds timeout, use the following syntax:
+
+`make-<IP1>-rebindfor<interval>-<IP2>-rr.1u.ms`
+
+where `<interval>` is something like `10s` (10 seconds) or `5m` (5 minutes).
+
+If you need that "whitelisted" IP (which is IP1 in our examples) be returned multiple times before rebinding, use the following syntax:
+
+`make-<IP1>-rebindfor<interval>after2times-<IP2>-rr.1u.ms`
+
+For example, `make-1.2.3.4-rebindfor30safter2times-127.0.0.1-rr.1u.ms` will resolve in `1.2.3.4` first two times, and then will resolve in `127.0.0.1` for next 30 seconds.
+
 #### AAAA-record
 
 To make up a domain that resolves only to an IPv6 address, use the following syntax:

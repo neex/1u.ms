@@ -6,17 +6,20 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/miekg/dns"
 )
 
 const (
-	rebindRecord    = `.*rebind-(.*?)rr.*`
-	makeRecord      = `.*make-(.*?)(rr|rebind).*`
-	incRecord       = `(.*inc-)([0-9]+?)(-num.*)`
-	cnameSubdomain  = ".sub.sh.je."
-	multipleRecords = "-and-"
+	rebindRecord         = `.*rebind-(.*?)rr.*`
+	rebindForRecord      = `.*rebindfor([^-]*)-(.*?)rr.*`
+	rebindForTimesRecord = `.*rebindfor([^-]*)after([0-9]*)times-(.*?)rr.*`
+	makeRecord           = `.*make-(.*?)(rr|rebind).*`
+	incRecord            = `(.*inc-)([0-9]+?)(-num.*)`
+	cnameSubdomain       = ".sub.sh.je."
+	multipleRecords      = "-and-"
 )
 
 func NewMakeRecordHandler() DNSHandler {
@@ -26,13 +29,64 @@ func NewMakeRecordHandler() DNSHandler {
 }
 
 func NewRebindRecordHandler() DNSHandler {
-	qtimes := make(map[query]time.Time)
+	deadline := make(map[query]time.Time)
+	var m sync.Mutex
 	return NewDNSRegexpHandler(rebindRecord, func(q *query, match []string) ([]string, bool) {
-		if time.Since(qtimes[*q]) > 5*time.Second {
-			qtimes[*q] = time.Now()
+		m.Lock()
+		defer m.Unlock()
+		if time.Now().After(deadline[*q]) {
+			deadline[*q] = time.Now().Add(5 * time.Second)
 			return nil, false
 		}
 		return convertAddrs(match[1], q)
+	})
+}
+
+func NewRebindForRecordHandler() DNSHandler {
+	deadline := make(map[query]time.Time)
+	var m sync.Mutex
+	return NewDNSRegexpHandler(rebindForRecord, func(q *query, match []string) ([]string, bool) {
+		m.Lock()
+		defer m.Unlock()
+		duration, err := time.ParseDuration(match[1])
+		if err != nil {
+			return nil, false
+		}
+
+		if time.Now().After(deadline[*q]) {
+			deadline[*q] = time.Now().Add(duration)
+			return nil, false
+		}
+		return convertAddrs(match[2], q)
+	})
+}
+
+func NewRebindForTimesRecordHandler() DNSHandler {
+	deadline := make(map[query]time.Time)
+	times := make(map[query]int)
+	var m sync.Mutex
+	return NewDNSRegexpHandler(rebindForTimesRecord, func(q *query, match []string) ([]string, bool) {
+		m.Lock()
+		defer m.Unlock()
+		duration, err := time.ParseDuration(match[1])
+		if err != nil {
+			return nil, false
+		}
+		timesAfter, err := strconv.Atoi(match[2])
+		if err != nil {
+			return nil, false
+		}
+
+		if time.Now().After(deadline[*q]) {
+			deadline[*q] = time.Now().Add(duration)
+			times[*q] = 1
+			return nil, false
+		}
+		if times[*q] < timesAfter {
+			times[*q] += 1
+			return nil, false
+		}
+		return convertAddrs(match[3], q)
 	})
 }
 

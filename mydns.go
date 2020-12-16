@@ -54,6 +54,8 @@ func (w *HandlerWrapper) ServeDNS(wr dns.ResponseWriter, r *dns.Msg) {
 
 func main() {
 	handlers := DNSHandlers{
+		NewRebindForTimesRecordHandler(),
+		NewRebindForRecordHandler(),
 		NewRebindRecordHandler(),
 		NewMakeRecordHandler(),
 		NewIncRecordHandler(),
@@ -61,7 +63,7 @@ func main() {
 	}
 
 	if len(os.Args) == 2 && os.Args[1] == "--no-rebind" {
-		handlers = handlers[1:]
+		handlers = handlers[3:]
 	}
 
 	lv := NewLogViewer()

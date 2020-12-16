@@ -12,10 +12,6 @@ var records = map[query][]string{
 		"airbnb-photos1s37amazonaws.com. 0 IN NS hui.sub.sh.je.",
 	},
 
-	{t: dns.TypeA, name: "airbnb-photos1s37amazonaws.com."}: {
-		"airbnb-photos1s37amazonaws.com. 0 IN CNAME zalupa.sub.sh.je.",
-	},
-
 	{t: dns.TypeSOA, name: "sub.sh.je."}: {
 		"sub.sh.je. 0 IN SOA hui.sh.je. root.hui.sh.je. 12321839 0 0 0 1",
 	},
