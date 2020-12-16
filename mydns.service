@@ -1,0 +1,14 @@
+[Unit]
+Description=DNS
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/local/bin/mydns
+User=nobody
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+LimitNOFILE=100000
+
+[Install]
+WantedBy=multi-user.target
