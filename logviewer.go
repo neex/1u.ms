@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"regexp"
 	"sync"
 	"time"
 )
@@ -64,15 +65,28 @@ func (lv *LogViewer) handleLast(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (lv *LogViewer) handleLog(w http.ResponseWriter, r *http.Request) {
+	grep := r.URL.Query().Get("grep")
+	if grep == "" {
+		grep = ".*"
+	}
+	re, err := regexp.Compile(grep)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	lg := newLineGrep(re, w)
+
 	snapshot, ch := lv.registerListener()
 	defer lv.unregisterListener(ch)
+
+	flusher, _ := w.(http.Flusher)
 	flush := func() {
-		if flusher, ok := w.(http.Flusher); ok {
+		if flusher != nil {
 			flusher.Flush()
 		}
 	}
 
-	if _, err := w.Write(snapshot); err != nil {
+	if _, err := lg.Write(snapshot); err != nil {
 		return
 	}
 	flush()
@@ -86,7 +100,7 @@ func (lv *LogViewer) handleLog(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			if _, err := fmt.Fprintf(w, "%s\n", val); err != nil {
+			if _, err := fmt.Fprintf(lg, "%s\n", val); err != nil {
 				return
 			}
 			flush()

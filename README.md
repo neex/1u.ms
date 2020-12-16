@@ -142,7 +142,7 @@ The log of all DNS requests is public. There are the following endpoints:
 
 * [http://1u.ms/last](http://1u.ms/last) — gives last 100 requests
 * http://1u.ms/log — an infinite loading page with current log records, like `tail -f`. Intended usage is running `curl http://1u.ms/log` in a terminal while doing your experiments.
-
+* http://1u.ms/log?grep=&lt;regexp&gt; — same as above, but show only matching lines
 ## Contacts & FAQ
 
 If you have any questions or suggestions in mind, feel free to contact me via [@neexemil](https://t.me/neexemil) on Telegram.
