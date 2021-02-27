@@ -6,7 +6,7 @@ This is a small set of zero-configuration DNS utilities for assisting in detecti
 
 The tool does not employ any novel techniques and is not unique in any sense. All features are trivial to implement and can be easily found in other similar tools.
 
-The service is currently run at the `1u.ms` domain (and its' subdomains).
+The service is currently run at the [1u.ms](https://1u.ms/) domain (and its' subdomains).
 
 If you're reading this on github, you're going to have very hard time trying to self-host it. The code is shitty as hell. Start with `records.go` and `mydns.go`. Pull requests are welcome :)
 
