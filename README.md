@@ -8,6 +8,8 @@ The tool does not employ any novel techniques and is not unique in any sense. Al
 
 The service is currently run at the `1u.ms` domain (and its' subdomains).
 
+If you're reading this on github, you're going to have very hard time trying to self-host it. The code is shitty as hell. Start with `records.go` and `mydns.go`. Pull requests are welcome :)
+
 ## Usage
 
 #### A-record
@@ -145,7 +147,7 @@ The log of all DNS requests is public. There are the following endpoints:
 * http://1u.ms/log?grep=&lt;regexp&gt; — same as above, but show only matching lines
 ## Contacts & FAQ
 
-If you have any questions or suggestions in mind, feel free to contact me via [@neexemil](https://t.me/neexemil) on Telegram.
+If you have any questions or suggestions in mind, feel free to contact me via [@neexemil](https://t.me/neexemil) on Telegram or [@emil_lerner](https://twitter.com/emil_lerner) on Twitter.
 
 #### Is this tool free for any type of usage?
 
