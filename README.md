@@ -78,7 +78,7 @@ where `<interval>` is something like `10s` (10 seconds) or `5m` (5 minutes).
 
 If you need that "whitelisted" IP (which is IP1 in our examples) be returned multiple times before rebinding, use the following syntax:
 
-`make-<IP1>-rebindfor<interval>after2times-<IP2>-rr.1u.ms`
+`make-<IP1>-rebindfor<interval>after<num>times-<IP2>-rr.1u.ms`
 
 For example, `make-1.2.3.4-rebindfor30safter2times-127.0.0.1-rr.1u.ms` will resolve in `1.2.3.4` first two times, and then will resolve in `127.0.0.1` for next 30 seconds.
 
@@ -150,7 +150,8 @@ The log of all DNS requests is public. There are the following endpoints:
 
 * [http://1u.ms/last](http://1u.ms/last) — gives last 100 requests
 * http://1u.ms/log — an infinite loading page with current log records, like `tail -f`. Intended usage is running `curl http://1u.ms/log` in a terminal while doing your experiments.
-* http://1u.ms/log?grep=&lt;regexp&gt; — same as above, but show only matching lines
+* [http://1u.ms/log?grep=`<regexp>`](http://1u.ms/log?grep=<regexp>) — same as above, but show only matching lines
+
 ## Contacts & FAQ
 
 If you have any questions or suggestions in mind, feel free to contact me via [@neexemil](https://t.me/neexemil) on Telegram or [@emil_lerner](https://twitter.com/emil_lerner) on Twitter.
