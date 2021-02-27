@@ -138,6 +138,12 @@ $ host -t A make-hex-312e322e332e34-rr.1u.ms
 make-hex-312e322e332e34-rr.1u.ms has address 1.2.3.4
 ```
 
+#### Note on DNS TTLs
+
+Some servers doesn't want to handle zero TTL replies. Default TTL is 1 for "service" domains and 0 for others.
+
+If you want to change TTL, add `set-<number>-ttl` anywhere in the domain name.
+
 #### Log viewing
 
 The log of all DNS requests is public. There are the following endpoints:
@@ -156,3 +162,7 @@ Sure.
 #### But what if I use it during some illegal adventure or DDoS it with a huge amount of traffic?
 
 These are awful ideas which I don't like.
+
+#### I've read the code and have concluded that you're a noob. It is the shittiest program ever.
+
+Sorry.

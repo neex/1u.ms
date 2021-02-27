@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,8 +19,8 @@ const (
 	rebindForTimesRecord = `.*rebindfor([^-]*)after([0-9]*)times-(.*?)rr.*`
 	makeRecord           = `.*make-(.*?)(rr|rebind).*`
 	incRecord            = `(.*inc-)([0-9]+?)(-num.*)`
-	cnameSubdomain       = ".sub.sh.je."
 	multipleRecords      = "-and-"
+	thisDomain           = "hui.sh.je."
 )
 
 func NewMakeRecordHandler() DNSHandler {
@@ -191,8 +192,8 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 }
 
 func makeCNAME(cname string) string {
-	if !strings.Contains(cname, ".") {
-		cname = cname + cnameSubdomain
+	if cname == "this" {
+		return thisDomain
 	}
 	if cname[0] == '.' {
 		cname = cname[1:]
@@ -200,6 +201,13 @@ func makeCNAME(cname string) string {
 	return cname
 }
 
+var ttlRe = regexp.MustCompile("set-([0-9]+)-ttl")
+
 func makeRR(domain, qtype, val string) string {
-	return fmt.Sprintf("%s 0 IN %s %s", domain, qtype, val)
+	ttl := 0
+	m := ttlRe.FindStringSubmatch(domain)
+	if m != nil {
+		ttl, _ = strconv.Atoi(m[1])
+	}
+	return fmt.Sprintf("%s %d IN %s %s", domain, ttl, qtype, val)
 }
