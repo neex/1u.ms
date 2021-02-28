@@ -3,7 +3,7 @@ domain: 1u.ms
 predefined_records:
   1u.ms:
     A:
-      - "1u.ms. 1 IN CNAME hui.sh.je."
+      - "1u.ms. 1 IN A 206.81.28.151"
     SOA:
       - "1u.ms. 1 IN SOA hui.sh.je. root.localhost. 12321833 0 0 0 1"
     NS:
