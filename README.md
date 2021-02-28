@@ -6,7 +6,7 @@ This is a small set of zero-configuration DNS utilities for assisting in detecti
 
 The tool does not employ any novel techniques and is not unique in any sense. All features are trivial to implement and can be easily found in other similar tools.
 
-The service is currently run at the [1u.ms](https://1u.ms/) domain (and its' subdomains).
+The service is currently run at the [1u.ms](http://1u.ms/) domain (and its' subdomains).
 
 #### Source code & self-host
 
@@ -142,7 +142,7 @@ make-hex-312e322e332e34-rr.1u.ms has address 1.2.3.4
 
 #### Note on DNS TTLs
 
-Some servers doesn't want to handle zero TTL replies. Default TTL is 1 for "service" domains and 0 for others.
+Some servers don't want to handle zero TTL replies. Default TTL is 1 for "service" domains and 0 for others.
 
 If you want to change TTL, add `set-<number>-ttl` anywhere in the domain name.
 
