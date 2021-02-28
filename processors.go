@@ -20,6 +20,7 @@ const (
 	makeRecord           = `.*make-(.*?)(rr|rebind).*`
 	incRecord            = `(.*inc-)([0-9]+?)(-num.*)`
 	multipleRecords      = "-and-"
+	setTTLForRecord      = "set-([0-9]+)-ttl"
 )
 
 func NewMakeRecordHandler() DNSHandler {
@@ -204,7 +205,7 @@ func makeCNAME(cname string) string {
 	return cname
 }
 
-var ttlRe = regexp.MustCompile("set-([0-9]+)-ttl")
+var ttlRe = regexp.MustCompile(setTTLForRecord)
 
 func makeRR(domain, qtype, val string) string {
 	ttl := 0

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/miekg/dns"
-
 	"gopkg.in/yaml.v2"
 )
 
