@@ -8,7 +8,11 @@ The tool does not employ any novel techniques and is not unique in any sense. Al
 
 The service is currently run at the [1u.ms](https://1u.ms/) domain (and its' subdomains).
 
-If you're reading this on github, you're going to have very hard time trying to self-host it. The code is shitty as hell. Start with `records.go` and `mydns.go`. Pull requests are welcome :)
+#### Source code
+
+The source is available on [github](https://github.com/neex/1u.ms). However, the code is shitty as hell.
+
+If you want to self-host it, you will need to change all hard-coded domain names. Start with `records.go` and `mydns.go`. 
 
 ## Usage
 
