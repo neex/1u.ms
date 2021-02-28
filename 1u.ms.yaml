@@ -1,0 +1,15 @@
+domain: 1u.ms
+
+predefined_records:
+  1u.ms:
+    A:
+      - "1u.ms. 1 IN CNAME hui.sh.je."
+    SOA:
+      - "1u.ms. 1 IN SOA hui.sh.je. root.localhost. 12321833 0 0 0 1"
+    NS:
+      - "1u.ms. 1 IN NS hui.sh.je."
+      - "1u.ms. 1 IN NS pizda.sh.je."
+
+  rec.1u.ms:
+    A:
+      - "rec.1u.ms. 0 IN CNAME rec.1u.ms."

@@ -8,11 +8,16 @@ The tool does not employ any novel techniques and is not unique in any sense. Al
 
 The service is currently run at the [1u.ms](https://1u.ms/) domain (and its' subdomains).
 
-#### Source code
+#### Source code & self-host
 
 The source is available on [github](https://github.com/neex/1u.ms). However, the code is shitty as hell.
 
-If you want to self-host it, you will need to change all hard-coded domain names. Start with `records.go` and `mydns.go`. 
+If you want to self-host it, follow this steps:
+
+1. Get a domain name of your choice and put NS records so that your server serves that domain.
+2. Perform `go get github.com/neex/1u.ms`.
+3. Download and modify [1u.ms.yaml](https://github.com/neex/1u.ms/blob/master/1u.ms.yaml).
+4. Run like this: `1u.ms 1u.ms.yaml`.
 
 ## Usage
 

@@ -20,7 +20,6 @@ const (
 	makeRecord           = `.*make-(.*?)(rr|rebind).*`
 	incRecord            = `(.*inc-)([0-9]+?)(-num.*)`
 	multipleRecords      = "-and-"
-	thisDomain           = "hui.sh.je."
 )
 
 func NewMakeRecordHandler() DNSHandler {
@@ -102,6 +101,13 @@ func NewIncRecordHandler() DNSHandler {
 		}
 		newName := fmt.Sprintf("%s%d%s", match[1], val+1, match[3])
 		return []string{makeRR(q.name, "CNAME", newName)}, true
+	})
+}
+
+func NewPredefinedRecordHandler(records map[query][]string) DNSHandler {
+	return DNSHandlerFunc(func(q *query) (rrs []string, had bool) {
+		rrs, had = records[*q]
+		return
 	})
 }
 
@@ -192,9 +198,6 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 }
 
 func makeCNAME(cname string) string {
-	if cname == "this" {
-		return thisDomain
-	}
 	if cname[0] == '.' {
 		cname = cname[1:]
 	}

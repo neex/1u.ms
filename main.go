@@ -4,7 +4,6 @@ package main
 //go:generate go run readme_gen.go
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,8 +14,9 @@ import (
 )
 
 type HandlerWrapper struct {
-	dh DNSHandler
-	lv *LogViewer
+	dh           DNSHandler
+	lv           *LogViewer
+	dottedDomain string
 }
 
 func (w *HandlerWrapper) ServeDNS(wr dns.ResponseWriter, r *dns.Msg) {
@@ -27,15 +27,12 @@ func (w *HandlerWrapper) ServeDNS(wr dns.ResponseWriter, r *dns.Msg) {
 	q := &query{msg.Question[0].Qtype, strings.ToLower(msg.Question[0].Name)}
 
 	replies, _ := w.dh.Handle(q)
-	if q.name != "hui.sub.sh.je." {
-		_, _ = fmt.Fprintf(os.Stderr, "dns %v: %v %v -> %#v\n", wr.RemoteAddr(), dns.TypeToString[q.t], q.name, replies)
-	}
 
 	for _, s := range replies {
 		tryAdd(msg, s)
 	}
 
-	if strings.HasSuffix(q.name, "1u.ms.") && q.name != "1u.ms." {
+	if strings.HasSuffix(q.name, w.dottedDomain) && q.name != w.dottedDomain {
 		lr := &LogRecord{
 			Time:          time.Now(),
 			RemoteAddr:    wr.RemoteAddr().String(),
@@ -53,17 +50,22 @@ func (w *HandlerWrapper) ServeDNS(wr dns.ResponseWriter, r *dns.Msg) {
 }
 
 func main() {
+	if len(os.Args) != 2 {
+		log.Fatalf("Usage: %v CONFIG", os.Args[0])
+	}
+
+	config, err := NewConfig(os.Args[1])
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
 	handlers := DNSHandlers{
 		NewRebindForTimesRecordHandler(),
 		NewRebindForRecordHandler(),
 		NewRebindRecordHandler(),
 		NewMakeRecordHandler(),
 		NewIncRecordHandler(),
-		NewPredefinedRecordHandler(),
-	}
-
-	if len(os.Args) == 2 && os.Args[1] == "--no-rebind" {
-		handlers = handlers[3:]
+		NewPredefinedRecordHandler(config.PredefinedRecords),
 	}
 
 	lv := NewLogViewer()
@@ -89,8 +91,9 @@ func main() {
 		Addr: ":53",
 		Net:  "udp",
 		Handler: &HandlerWrapper{
-			dh: handlers,
-			lv: lv,
+			dh:           handlers,
+			lv:           lv,
+			dottedDomain: config.Domain + ".",
 		},
 	}
 
