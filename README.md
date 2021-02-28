@@ -122,13 +122,6 @@ make-cname-example.com-rr.1u.ms is an alias for example.com.
 ...
 ```
 
-Note that CNAMEs without dots are considered as subdomains with unrelated `sub.sh.je` domain (stupid implementation detail), which is probably not what you want:
-
-```shell
-$ host -t A make-localhost-rr.1u.ms
-make-localhost-rr.1u.ms is an alias for localhost.sub.sh.je.
-```
-
 #### Other record types
 
 If the thing between `make-` and `-rr` is a parsable record, it is returned for any type of request.
