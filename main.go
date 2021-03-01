@@ -69,23 +69,9 @@ func main() {
 	}
 
 	lv := NewLogViewer()
-	mux := http.NewServeMux()
-	lv.RegisterHandlers(mux)
-	mux.Handle("/", http.FileServer(Readme))
-
-	go func() {
-		err := http.ListenAndServe(":8080", mux)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	go func() {
-		err := http.ListenAndServe(":80", mux)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	if err := runHTTPServers(config, lv); err != nil {
+		log.Fatal(err)
+	}
 
 	srv := &dns.Server{
 		Addr: ":53",
@@ -100,4 +86,21 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("Failed to set udp listener %s\n", err.Error())
 	}
+}
+
+func runHTTPServers(config *Config, lv *LogViewer) error {
+	mux := http.NewServeMux()
+	lv.RegisterHandlers(mux)
+	mux.Handle("/", http.FileServer(Readme))
+
+	for _, addr := range config.HTTP.ListenOn {
+		go func(addr string) {
+			err := http.ListenAndServe(addr, mux)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(addr)
+	}
+
+	return nil
 }

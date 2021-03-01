@@ -1,5 +1,10 @@
 domain: 1u.ms
 
+http:
+  listen_on:
+    - ":80"
+    - ":8080"
+
 predefined_records:
   1u.ms:
     A:

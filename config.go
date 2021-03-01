@@ -9,44 +9,30 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Config struct {
-	Domain            string
-	PredefinedRecords map[query][]string
-}
+type PredefinedRecords map[query][]string
 
-func NewConfig(filename string) (*Config, error) {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
+func (p *PredefinedRecords) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	if *p == nil {
+		*p = make(PredefinedRecords)
+	}
+	conf := map[string]map[string][]string{}
+	if err := unmarshal(&conf); err != nil {
+		return err
 	}
 
-	var c struct {
-		Domain            string                         `yaml:"domain"`
-		PredefinedRecords map[string]map[string][]string `yaml:"predefined_records"`
-	}
-
-	if err := yaml.Unmarshal(data, &c); err != nil {
-		return nil, err
-	}
-
-	conf := &Config{
-		Domain:            c.Domain,
-		PredefinedRecords: make(map[query][]string),
-	}
-
-	for domain, replies := range c.PredefinedRecords {
+	for domain, replies := range conf {
 		if !strings.HasSuffix(domain, ".") {
 			domain = domain + "."
 		}
 		for queryType, rrs := range replies {
 			t, ok := dns.StringToType[queryType]
 			if !ok {
-				return nil, fmt.Errorf("unknown query type: %v", queryType)
+				return fmt.Errorf("unknown query type: %v", queryType)
 			}
 
 			for _, rr := range rrs {
 				if _, err := dns.NewRR(rr); err != nil {
-					return nil, fmt.Errorf("failed to parse %#v for %v %v: %v",
+					return fmt.Errorf("failed to parse %#v for %v %v: %v",
 						rr, queryType, domain, err)
 				}
 			}
@@ -56,8 +42,29 @@ func NewConfig(filename string) (*Config, error) {
 				name: domain,
 			}
 
-			conf.PredefinedRecords[q] = rrs
+			(*p)[q] = rrs
 		}
+	}
+	return nil
+}
+
+type Config struct {
+	Domain            string            `yaml:"domain"`
+	PredefinedRecords PredefinedRecords `yaml:"predefined_records"`
+	HTTP              struct {
+		ListenOn []string `yaml:"listen_on"`
+	} `yaml:"http"`
+}
+
+func NewConfig(filename string) (*Config, error) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	conf := &Config{}
+	if err := yaml.Unmarshal(data, conf); err != nil {
+		return nil, err
 	}
 
 	return conf, nil
