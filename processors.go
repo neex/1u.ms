@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	rebindRecord         = `.*rebind-(.*?)rr.*`
-	rebindForRecord      = `.*rebindfor([^-]*)-(.*?)rr.*`
-	rebindForTimesRecord = `.*rebindfor([^-]*)after([0-9]*)times-(.*?)rr.*`
-	makeRecord           = `.*make-(.*?)(rr|rebind).*`
-	incRecord            = `(.*inc-)([0-9]+?)(-num.*)`
+	rebindRecord         = `.*?rebind-(.*?)rr.*`
+	rebindForRecord      = `.*?rebindfor([^-]*)-(.*?)rr.*`
+	rebindForTimesRecord = `.*?rebindfor([^-]*)after([0-9]*)times-(.*?)rr.*`
+	makeRecord           = `.*?make-(.*?)(rr|rebind).*`
+	incRecord            = `(.*?inc-)([0-9]+?)(-num.*)`
 	multipleRecords      = "-and-"
 	setTTLForRecord      = "set-([0-9]+)-ttl"
 )
