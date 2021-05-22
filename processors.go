@@ -199,7 +199,7 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 }
 
 func makeCNAME(cname string) string {
-	if cname[0] == '.' {
+	if len(cname) > 0 && cname[0] == '.' {
 		cname = cname[1:]
 	}
 	return cname
