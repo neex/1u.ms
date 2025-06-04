@@ -18,3 +18,12 @@ predefined_records:
   rec.1u.ms:
     A:
       - "rec.1u.ms. 0 IN CNAME rec.1u.ms."
+
+  make-hex-32332e3233302e37312e3231-rr.1u.ms:
+    A:
+      - "make-hex-32332e3233302e37312e3231-rr.1u.ms. 1 IN CNAME please-dont-use-the-tool-for-phishing-purposes.1u.ms."
+
+  ebanie-test-victim.1u.ms:
+    A:
+      - "ebanie-test-victim.1u.ms. 120 IN A 255.255.255.255"
+

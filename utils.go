@@ -10,8 +10,9 @@ import (
 )
 
 type query struct {
-	t    uint16
-	name string
+	t            uint16
+	name         string
+	nameForReply string
 }
 
 func mustRR(s string) dns.RR {

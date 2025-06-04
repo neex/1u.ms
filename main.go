@@ -24,7 +24,12 @@ func (w *HandlerWrapper) ServeDNS(wr dns.ResponseWriter, r *dns.Msg) {
 	msg.SetReply(r)
 	msg.Authoritative = true
 
-	q := &query{msg.Question[0].Qtype, strings.ToLower(msg.Question[0].Name)}
+	domain := strings.ToLower(msg.Question[0].Name)
+	q := &query{
+		t:            msg.Question[0].Qtype,
+		name:         domain,
+		nameForReply: domain,
+	}
 
 	replies, _ := w.dh.Handle(q)
 
@@ -54,18 +59,21 @@ func main() {
 		log.Fatalf("Usage: %v CONFIG", os.Args[0])
 	}
 
-	config, err := NewConfig(os.Args[1])
+	config, err := NewConfig(os.Args[1:])
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
 	handlers := DNSHandlers{
+		NewDelayRecordHandler(),
+		NewNoHTTPSRecordHandler(),
+		NewFakeRecordHandler(),
+		NewPredefinedRecordHandler(config.PredefinedRecords),
 		NewRebindForTimesRecordHandler(),
 		NewRebindForRecordHandler(),
 		NewRebindRecordHandler(),
 		NewMakeRecordHandler(),
 		NewIncRecordHandler(),
-		NewPredefinedRecordHandler(config.PredefinedRecords),
 	}
 
 	lv := NewLogViewer()

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
+	"log"
 	"net"
 	"regexp"
 	"strconv"
@@ -21,6 +22,8 @@ const (
 	incRecord            = `(.*?inc-)([0-9]+?)(-num.*)`
 	multipleRecords      = "-and-"
 	setTTLForRecord      = "set-([0-9]+)-ttl"
+	fakeRecord           = `.*?fake-(.*?)-rr.*`
+	delayRecord          = `.*?delay-(.*?)-(.*?)-only.*`
 )
 
 func NewMakeRecordHandler() DNSHandler {
@@ -107,11 +110,41 @@ func NewIncRecordHandler() DNSHandler {
 
 func NewPredefinedRecordHandler(records map[query][]string) DNSHandler {
 	return DNSHandlerFunc(func(q *query) (rrs []string, had bool) {
+		log.Printf("query: %#v, records: %#v", q, records)
 		rrs, had = records[*q]
 		return
 	})
 }
 
+func NewFakeRecordHandler() DNSHandler {
+	return NewDNSRegexpHandler(fakeRecord, func(q *query, match []string) ([]string, bool) {
+		q.nameForReply = match[1]
+		return nil, false
+	})
+}
+
+func NewNoHTTPSRecordHandler() DNSHandler {
+	return DNSHandlerFunc(func(q *query) ([]string, bool) {
+		if q.t == dns.TypeHTTPS {
+			return nil, true
+		}
+		return nil, false
+	})
+}
+
+func NewDelayRecordHandler() DNSHandler {
+	return NewDNSRegexpHandler(delayRecord, func(q *query, match []string) ([]string, bool) {
+		duration, err := time.ParseDuration(match[1])
+		if err != nil {
+			return nil, false
+		}
+		reqType := match[2]
+		if strings.ToUpper(reqType) == dns.TypeToString[q.t] {
+			time.Sleep(duration)
+		}
+		return nil, false
+	})
+}
 func convertAddrs(addr string, q *query) (rrs []string, final bool) {
 	addrs := strings.Split(addr, multipleRecords)
 	for _, addr := range addrs {
@@ -128,7 +161,7 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 	}
 
 	if strings.HasPrefix(addr, "cname-") {
-		return []string{makeRR(q.name, "CNAME", makeCNAME(strings.ToLower(addr[6:])))}, true
+		return []string{makeRR(q.nameForReply, "CNAME", makeCNAME(strings.ToLower(addr[6:])))}, true
 	}
 
 	if q.t == dns.TypeA || q.t == dns.TypeAAAA {
@@ -137,7 +170,7 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 		if strings.HasPrefix(ip, "ip-") {
 			ip = ip[3:]
 			ip = strings.Replace(ip, "o", ".", -1)
-			ip = strings.Replace(ip, "c", ":", -1)
+			ip = strings.Replace(ip, "l", ":", -1)
 		} else {
 			ipDashDots := strings.Replace(ip, "-", ".", -1)
 			ipDashColons := strings.Replace(ip, "-", ":", -1)
@@ -161,14 +194,14 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 				if !isV4 {
 					return nil, true
 				}
-				return []string{makeRR(q.name, "A", parsed.To4().String())}, true
+				return []string{makeRR(q.nameForReply, "A", parsed.To4().String())}, true
 			}
 
 			if q.t == dns.TypeAAAA {
 				if isV4 {
 					return nil, true
 				}
-				return []string{makeRR(q.name, "AAAA", forcedV6(parsed))}, true
+				return []string{makeRR(q.nameForReply, "AAAA", forcedV6(parsed))}, true
 			}
 		}
 	} else {
@@ -177,25 +210,19 @@ func convertAddr(addr string, q *query) ([]string, bool) {
 		}
 	}
 
-	allowCNAME := true
 	if strings.HasPrefix(addr, "hex-") {
 		cc, err := hex.DecodeString(addr[4:])
 		if err == nil {
 			addr = string(cc)
-			allowCNAME = false
 		}
 	}
 
-	rr := makeRR(q.name, dns.TypeToString[q.t], addr)
+	rr := makeRR(q.nameForReply, dns.TypeToString[q.t], addr)
 	if _, err := dns.NewRR(rr); err == nil {
 		return []string{rr}, true
 	}
 
-	if !allowCNAME {
-		return []string{}, true
-	}
-
-	return []string{makeRR(q.name, "CNAME", makeCNAME(addr))}, true
+	return []string{}, true
 }
 
 func makeCNAME(cname string) string {

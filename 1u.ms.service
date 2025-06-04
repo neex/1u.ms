@@ -4,6 +4,7 @@ Description=DNS
 [Service]
 Type=simple
 Restart=always
+RestartSec=1
 ExecStart=/usr/local/bin/1u.ms /etc/1u.ms.yaml
 User=nobody
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/miekg/dns"
@@ -38,8 +38,9 @@ func (p *PredefinedRecords) UnmarshalYAML(unmarshal func(interface{}) error) err
 			}
 
 			q := query{
-				t:    t,
-				name: domain,
+				t:            t,
+				name:         domain,
+				nameForReply: domain,
 			}
 
 			(*p)[q] = rrs
@@ -56,16 +57,47 @@ type Config struct {
 	} `yaml:"http"`
 }
 
-func NewConfig(filename string) (*Config, error) {
-	data, err := ioutil.ReadFile(filename)
+func NewConfig(filenames []string) (*Config, error) {
+	mergedConfig := make(map[interface{}]interface{})
+
+	for _, filename := range filenames {
+		data, err := os.ReadFile(filename)
+		if err != nil {
+			return nil, fmt.Errorf("error reading config file %s: %w", filename, err)
+		}
+
+		var currentConfig map[interface{}]interface{}
+		if err := yaml.Unmarshal(data, &currentConfig); err != nil {
+			return nil, fmt.Errorf("error parsing config file %s: %w", filename, err)
+		}
+
+		recursiveMerge(mergedConfig, currentConfig)
+	}
+
+	// Convert merged map back to YAML and then to Config struct
+	mergedYAML, err := yaml.Marshal(mergedConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error marshaling merged config: %w", err)
 	}
 
 	conf := &Config{}
-	if err := yaml.Unmarshal(data, conf); err != nil {
-		return nil, err
+	if err := yaml.Unmarshal(mergedYAML, conf); err != nil {
+		return nil, fmt.Errorf("error unmarshaling merged config: %w", err)
 	}
 
 	return conf, nil
+}
+
+func recursiveMerge(dst, src map[interface{}]interface{}) {
+	for k, v := range src {
+		if existing, exists := dst[k]; exists {
+			if existingMap, ok := existing.(map[interface{}]interface{}); ok {
+				if srcMap, ok := v.(map[interface{}]interface{}); ok {
+					recursiveMerge(existingMap, srcMap)
+					continue
+				}
+			}
+		}
+		dst[k] = v
+	}
 }
