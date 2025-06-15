@@ -31,10 +31,15 @@ func (w *HandlerWrapper) ServeDNS(wr dns.ResponseWriter, r *dns.Msg) {
 		nameForReply: domain,
 	}
 
-	replies, _ := w.dh.Handle(q)
+	resp := w.dh.Handle(q)
 
-	for _, s := range replies {
-		tryAdd(msg, s)
+	if resp != nil {
+		for _, s := range resp.RRs {
+			tryAdd(msg, s)
+		}
+		if resp.ReturnServfail {
+			msg.SetRcode(r, dns.RcodeServerFailure)
+		}
 	}
 
 	if strings.HasSuffix(q.name, w.dottedDomain) && q.name != w.dottedDomain {
@@ -43,7 +48,7 @@ func (w *HandlerWrapper) ServeDNS(wr dns.ResponseWriter, r *dns.Msg) {
 			RemoteAddr:    wr.RemoteAddr().String(),
 			RequestType:   dns.TypeToString[q.t],
 			RequestDomain: q.name,
-			Replies:       replies,
+			Response:      resp,
 		}
 
 		w.lv.Push(lr)
@@ -66,6 +71,7 @@ func main() {
 
 	handlers := DNSHandlers{
 		NewDelayRecordHandler(),
+		NewServfailRecordHandler(),
 		NewNoHTTPSRecordHandler(),
 		NewFakeRecordHandler(),
 		NewPredefinedRecordHandler(config.PredefinedRecords),

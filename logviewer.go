@@ -14,12 +14,12 @@ type LogRecord struct {
 	RemoteAddr    string
 	RequestType   string
 	RequestDomain string
-	Replies       []string
+	Response      *DNSHandlerResponse
 }
 
 func (lr *LogRecord) String() string {
 	return fmt.Sprintf("[%v] %s %s %#v -> %v", lr.Time.Format("2006-01-02 15:04:05.999"),
-		lr.RemoteAddr, lr.RequestType, lr.RequestDomain, lr.Replies)
+		lr.RemoteAddr, lr.RequestType, lr.RequestDomain, lr.Response)
 }
 
 type LogViewer struct {

@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"log"
 	"net"
 	"regexp"
 	"strconv"
@@ -24,10 +23,11 @@ const (
 	setTTLForRecord      = "set-([0-9]+)-ttl"
 	fakeRecord           = `.*?fake-(.*?)-rr.*`
 	delayRecord          = `.*?delay-(.*?)-(.*?)-only.*`
+	servfailRecord       = `.*?make-servfail.*`
 )
 
 func NewMakeRecordHandler() DNSHandler {
-	return NewDNSRegexpHandler(makeRecord, func(q *query, match []string) ([]string, bool) {
+	return NewDNSRegexpHandler(makeRecord, func(q *query, match []string) *DNSHandlerResponse {
 		return convertAddrs(match[1], q)
 	})
 }
@@ -35,12 +35,12 @@ func NewMakeRecordHandler() DNSHandler {
 func NewRebindRecordHandler() DNSHandler {
 	deadline := make(map[query]time.Time)
 	var m sync.Mutex
-	return NewDNSRegexpHandler(rebindRecord, func(q *query, match []string) ([]string, bool) {
+	return NewDNSRegexpHandler(rebindRecord, func(q *query, match []string) *DNSHandlerResponse {
 		m.Lock()
 		defer m.Unlock()
 		if time.Now().After(deadline[*q]) {
 			deadline[*q] = time.Now().Add(5 * time.Second)
-			return nil, false
+			return nil
 		}
 		return convertAddrs(match[1], q)
 	})
@@ -49,17 +49,17 @@ func NewRebindRecordHandler() DNSHandler {
 func NewRebindForRecordHandler() DNSHandler {
 	deadline := make(map[query]time.Time)
 	var m sync.Mutex
-	return NewDNSRegexpHandler(rebindForRecord, func(q *query, match []string) ([]string, bool) {
+	return NewDNSRegexpHandler(rebindForRecord, func(q *query, match []string) *DNSHandlerResponse {
 		m.Lock()
 		defer m.Unlock()
 		duration, err := time.ParseDuration(match[1])
 		if err != nil {
-			return nil, false
+			return nil
 		}
 
 		if time.Now().After(deadline[*q]) {
 			deadline[*q] = time.Now().Add(duration)
-			return nil, false
+			return nil
 		}
 		return convertAddrs(match[2], q)
 	})
@@ -69,90 +69,111 @@ func NewRebindForTimesRecordHandler() DNSHandler {
 	deadline := make(map[query]time.Time)
 	times := make(map[query]int)
 	var m sync.Mutex
-	return NewDNSRegexpHandler(rebindForTimesRecord, func(q *query, match []string) ([]string, bool) {
+	return NewDNSRegexpHandler(rebindForTimesRecord, func(q *query, match []string) *DNSHandlerResponse {
 		m.Lock()
 		defer m.Unlock()
 		duration, err := time.ParseDuration(match[1])
 		if err != nil {
-			return nil, false
+			return nil
 		}
 		timesAfter, err := strconv.Atoi(match[2])
 		if err != nil {
-			return nil, false
+			return nil
 		}
 
 		if time.Now().After(deadline[*q]) {
 			deadline[*q] = time.Now().Add(duration)
 			times[*q] = 1
-			return nil, false
+			return nil
 		}
 		if times[*q] < timesAfter {
 			times[*q] += 1
-			return nil, false
+			return nil
 		}
 		return convertAddrs(match[3], q)
 	})
 }
 
 func NewIncRecordHandler() DNSHandler {
-	return NewDNSRegexpHandler(incRecord, func(q *query, match []string) ([]string, bool) {
+	return NewDNSRegexpHandler(incRecord, func(q *query, match []string) *DNSHandlerResponse {
 		if q.t != dns.TypeA {
-			return nil, false
+			return nil
 		}
 		val, err := strconv.Atoi(match[2])
 		if err != nil {
-			return nil, false
+			return nil
 		}
 		newName := fmt.Sprintf("%s%d%s", match[1], val+1, match[3])
-		return []string{makeRR(q.name, "CNAME", newName)}, true
+		return &DNSHandlerResponse{
+			RRs: []string{makeRR(q.name, "CNAME", newName)},
+		}
 	})
 }
 
 func NewPredefinedRecordHandler(records map[query][]string) DNSHandler {
-	return DNSHandlerFunc(func(q *query) (rrs []string, had bool) {
-		log.Printf("query: %#v, records: %#v", q, records)
-		rrs, had = records[*q]
-		return
+	return DNSHandlerFunc(func(q *query) *DNSHandlerResponse {
+		if rrs, ok := records[*q]; ok {
+			return &DNSHandlerResponse{
+				RRs: rrs,
+			}
+		}
+		return nil
 	})
 }
 
 func NewFakeRecordHandler() DNSHandler {
-	return NewDNSRegexpHandler(fakeRecord, func(q *query, match []string) ([]string, bool) {
+	return NewDNSRegexpHandler(fakeRecord, func(q *query, match []string) *DNSHandlerResponse {
 		q.nameForReply = match[1]
-		return nil, false
+		return nil
 	})
 }
 
 func NewNoHTTPSRecordHandler() DNSHandler {
-	return DNSHandlerFunc(func(q *query) ([]string, bool) {
+	return DNSHandlerFunc(func(q *query) *DNSHandlerResponse {
 		if q.t == dns.TypeHTTPS {
-			return nil, true
+			return &DNSHandlerResponse{}
 		}
-		return nil, false
+		return nil
 	})
 }
 
 func NewDelayRecordHandler() DNSHandler {
-	return NewDNSRegexpHandler(delayRecord, func(q *query, match []string) ([]string, bool) {
+	return NewDNSRegexpHandler(delayRecord, func(q *query, match []string) *DNSHandlerResponse {
 		duration, err := time.ParseDuration(match[1])
 		if err != nil {
-			return nil, false
+			return nil
 		}
 		reqType := match[2]
 		if strings.ToUpper(reqType) == dns.TypeToString[q.t] {
 			time.Sleep(duration)
 		}
-		return nil, false
+		return nil
 	})
 }
-func convertAddrs(addr string, q *query) (rrs []string, final bool) {
+
+func NewServfailRecordHandler() DNSHandler {
+	return NewDNSRegexpHandler(servfailRecord, func(q *query, match []string) *DNSHandlerResponse {
+		return &DNSHandlerResponse{
+			ReturnServfail: true,
+		}
+	})
+}
+
+func convertAddrs(addr string, q *query) *DNSHandlerResponse {
 	addrs := strings.Split(addr, multipleRecords)
+	found := true
+	var rrs []string
 	for _, addr := range addrs {
 		vals, parsed := convertAddr(addr, q)
-		final = final || parsed
+		found = found || parsed
 		rrs = append(rrs, vals...)
 	}
-	return
+	if found {
+		return &DNSHandlerResponse{
+			RRs: rrs,
+		}
+	}
+	return nil
 }
 
 func convertAddr(addr string, q *query) ([]string, bool) {
